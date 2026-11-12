@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256">
+  <title>TextAnonymizer</title>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#3B82F6"/>
+      <stop offset="1" stop-color="#1E40AF"/>
+    </linearGradient>
+  </defs>
+  <rect width="256" height="256" rx="56" fill="url(#bg)"/>
+  <path d="M128 36 L204 64 V120 C204 164 172 196 128 220 C84 196 52 164 52 120 V64 Z" fill="#FFFFFF"/>
+  <rect x="84" y="90" width="88" height="14" rx="7" fill="#93C5FD"/>
+  <rect x="84" y="118" width="88" height="14" rx="7" fill="#1E3A8A"/>
+  <rect x="84" y="146" width="56" height="14" rx="7" fill="#93C5FD"/>
+</svg>
