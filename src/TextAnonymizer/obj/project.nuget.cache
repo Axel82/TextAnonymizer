@@ -1,0 +1,22 @@
+{
+  "version": 2,
+  "dgSpecHash": "cudlhrqKguI=",
+  "success": true,
+  "projectFilePath": "C:\\Users\\AxelHABEILLON\\.gemini\\antigravity-ide\\scratch\\TextAnonymizer\\src\\TextAnonymizer\\TextAnonymizer.csproj",
+  "expectedPackageFiles": [
+    "C:\\Users\\AxelHABEILLON\\.nuget\\packages\\avalonedit\\6.3.1.120\\avalonedit.6.3.1.120.nupkg.sha512",
+    "C:\\Users\\AxelHABEILLON\\.nuget\\packages\\communitytoolkit.mvvm\\8.4.0\\communitytoolkit.mvvm.8.4.0.nupkg.sha512",
+    "C:\\Users\\AxelHABEILLON\\.nuget\\packages\\documentformat.openxml\\3.5.1\\documentformat.openxml.3.5.1.nupkg.sha512",
+    "C:\\Users\\AxelHABEILLON\\.nuget\\packages\\documentformat.openxml.framework\\3.5.1\\documentformat.openxml.framework.3.5.1.nupkg.sha512",
+    "C:\\Users\\AxelHABEILLON\\.nuget\\packages\\mahapps.metro.iconpacks.core\\6.2.1\\mahapps.metro.iconpacks.core.6.2.1.nupkg.sha512",
+    "C:\\Users\\AxelHABEILLON\\.nuget\\packages\\mahapps.metro.iconpacks.material\\6.2.1\\mahapps.metro.iconpacks.material.6.2.1.nupkg.sha512",
+    "C:\\Users\\AxelHABEILLON\\.nuget\\packages\\markdig\\1.5.1\\markdig.1.5.1.nupkg.sha512",
+    "C:\\Users\\AxelHABEILLON\\.nuget\\packages\\pdfpig\\0.1.16\\pdfpig.0.1.16.nupkg.sha512",
+    "C:\\Users\\AxelHABEILLON\\.nuget\\packages\\system.io.packaging\\8.0.1\\system.io.packaging.8.0.1.nupkg.sha512",
+    "C:\\Users\\AxelHABEILLON\\.nuget\\packages\\system.security.cryptography.protecteddata\\8.0.0\\system.security.cryptography.protecteddata.8.0.0.nupkg.sha512",
+    "C:\\Users\\AxelHABEILLON\\.nuget\\packages\\system.text.json\\8.0.5\\system.text.json.8.0.5.nupkg.sha512",
+    "C:\\Users\\AxelHABEILLON\\.nuget\\packages\\wpf-ui\\4.3.0\\wpf-ui.4.3.0.nupkg.sha512",
+    "C:\\Users\\AxelHABEILLON\\.nuget\\packages\\wpf-ui.abstractions\\4.3.0\\wpf-ui.abstractions.4.3.0.nupkg.sha512"
+  ],
+  "logs": []
+}
