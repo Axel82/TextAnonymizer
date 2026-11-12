@@ -1,0 +1,79 @@
+<Page x:Class="TextAnonymizer.Views.Pages.SettingsPage"
+      xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+      xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+      xmlns:icons="http://metro.mahapps.com/winfx/xaml/iconpacks"
+      xmlns:app="clr-namespace:TextAnonymizer"
+      Title="Paramètres" Background="Transparent">
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <StackPanel Margin="20,8,20,20" MaxWidth="760" HorizontalAlignment="Left">
+            <TextBlock Text="Paramètres" Style="{StaticResource PageTitle}" />
+
+            <Border Style="{StaticResource ZoneCard}" Margin="0,0,0,12">
+                <StackPanel>
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                        <icons:PackIconMaterial Kind="TextSearch" VerticalAlignment="Center" Margin="0,0,8,0" />
+                        <TextBlock Text="Stratégie de correspondance" Style="{StaticResource ZoneHeader}" />
+                    </StackPanel>
+                    <TextBlock Text="S'applique à la table courante (mots entiers uniquement ; la correspondance la plus longue l'emporte)."
+                               TextWrapping="Wrap" Margin="0,0,0,8"
+                               Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                    <RadioButton GroupName="Strategy" Content="Strict — respecte la casse et les accents"
+                                 IsChecked="{Binding Table.Strategy, Converter={StaticResource EnumToBool}, ConverterParameter=Strict}" />
+                    <RadioButton GroupName="Strategy" Content="Ignorer la casse"
+                                 IsChecked="{Binding Table.Strategy, Converter={StaticResource EnumToBool}, ConverterParameter=IgnoreCase}" />
+                    <RadioButton GroupName="Strategy" Content="Ignorer la casse et les accents"
+                                 IsChecked="{Binding Table.Strategy, Converter={StaticResource EnumToBool}, ConverterParameter=IgnoreCaseAndDiacritics}" />
+                </StackPanel>
+            </Border>
+
+            <Border Style="{StaticResource ZoneCard}" Margin="0,0,0,12">
+                <StackPanel>
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                        <icons:PackIconMaterial Kind="AutoFix" VerticalAlignment="Center" Margin="0,0,8,0" />
+                        <TextBlock Text="Génération automatique" Style="{StaticResource ZoneHeader}" />
+                    </StackPanel>
+                    <ui:ToggleSwitch IsChecked="{Binding Table.AutoGenerateEnabled}"
+                                     Content="Proposer des valeurs fictives pour les entrées sans remplaçant"
+                                     ToolTip="Affiche le bouton « Générer automatiquement » sur la page Anonymisation" />
+                </StackPanel>
+            </Border>
+
+            <Border Style="{StaticResource ZoneCard}" Margin="0,0,0,12">
+                <StackPanel>
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                        <icons:PackIconMaterial Kind="ThemeLightDark" VerticalAlignment="Center" Margin="0,0,8,0" />
+                        <TextBlock Text="Apparence" Style="{StaticResource ZoneHeader}" />
+                    </StackPanel>
+                    <ui:ToggleSwitch IsChecked="{Binding IsDarkTheme}" Content="Thème sombre"
+                                     ToolTip="Bascule entre le thème clair et le thème sombre" />
+                </StackPanel>
+            </Border>
+
+            <Border Style="{StaticResource ZoneCard}">
+                <StackPanel>
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                        <icons:PackIconMaterial Kind="FolderLockOutline" VerticalAlignment="Center" Margin="0,0,8,0" />
+                        <TextBlock Text="Table chiffrée" Style="{StaticResource ZoneHeader}" />
+                    </StackPanel>
+                    <TextBlock Text="Emplacement du fichier (chiffré AES-256, clé protégée par DPAPI) :" Margin="0,0,0,6"
+                               Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                    <ui:TextBox Text="{Binding Table.CurrentPath, Mode=OneWay}" IsReadOnly="True"
+                                ToolTip="Lecture seule : utilisez « Charger » sur la page Table pour changer de fichier" />
+                </StackPanel>
+            </Border>
+
+            <Border Style="{StaticResource ZoneCard}" Margin="0,12,0,0">
+                <StackPanel>
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                        <icons:PackIconMaterial Kind="InformationOutline" VerticalAlignment="Center" Margin="0,0,8,0" />
+                        <TextBlock Text="À propos" Style="{StaticResource ZoneHeader}" />
+                    </StackPanel>
+                    <TextBlock Foreground="{DynamicResource TextFillColorSecondaryBrush}">
+                        <Run Text="TextAnonymizer version " /><Run Text="{x:Static app:AppVersion.Current}" />
+                    </TextBlock>
+                </StackPanel>
+            </Border>
+        </StackPanel>
+    </ScrollViewer>
+</Page>

@@ -1,0 +1,151 @@
+<Page x:Class="TextAnonymizer.Views.Pages.TablePage"
+      xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+      xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+      xmlns:icons="http://metro.mahapps.com/winfx/xaml/iconpacks"
+      Title="Table de conversion" Background="Transparent"
+      Height="{Binding ViewportHeight, RelativeSource={RelativeSource AncestorType=ScrollViewer}}">
+    <!-- Le NavigationView héberge les pages dans un ScrollViewer : sans cette hauteur, la page prend la taille de
+         son contenu et les zones ne défilent jamais. -->
+    <Grid Margin="20,8,20,20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <TextBlock Grid.Row="0" Text="Table de conversion" Style="{StaticResource PageTitle}" />
+
+        <Grid Grid.Row="1" Margin="0,0,0,12">
+            <ui:InfoBar Severity="Success" IsClosable="False" Title="Bijection valide"
+                        Message="Aucun doublon : la table peut être utilisée pour anonymiser et rétablir."
+                        IsOpen="True"
+                        Visibility="{Binding IsBijectionValid, Converter={StaticResource BoolToVisibility}}" />
+            <ui:InfoBar Severity="Error" IsClosable="False" Title="Table invalide : anonymisation bloquée"
+                        Message="{Binding ValidationSummary}"
+                        IsOpen="True"
+                        Visibility="{Binding IsBijectionValid, Converter={StaticResource BoolToVisibility}, ConverterParameter=Invert}" />
+        </Grid>
+
+        <DockPanel Grid.Row="2" Margin="0,0,0,12" LastChildFill="False">
+            <StackPanel DockPanel.Dock="Left" Orientation="Horizontal">
+                <ui:Button Appearance="Primary" Command="{Binding AddEntryCommand}" Margin="0,0,8,0" ToolTip="Ajouter une entrée">
+                    <StackPanel Orientation="Horizontal">
+                        <icons:PackIconMaterial Kind="Plus" Margin="0,0,8,0" VerticalAlignment="Center" />
+                        <TextBlock Text="Ajouter" />
+                    </StackPanel>
+                </ui:Button>
+                <ui:Button Command="{Binding RemoveEntryCommand}" Margin="0,0,8,0" ToolTip="Supprimer l'entrée sélectionnée">
+                    <icons:PackIconMaterial Kind="DeleteOutline" />
+                </ui:Button>
+                <ui:Button Command="{Binding GenerateCommand}" Margin="0,0,8,0"
+                           ToolTip="Générer automatiquement les remplaçants vides (aperçu avant validation)">
+                    <icons:PackIconMaterial Kind="AutoFix" />
+                </ui:Button>
+                <ui:Button Command="{Binding ValidateCommand}" Margin="0,0,16,0" ToolTip="Vérifier la bijection de la table">
+                    <icons:PackIconMaterial Kind="ShieldCheckOutline" />
+                </ui:Button>
+                <ui:Button Command="{Binding LoadCommand}" Margin="0,0,8,0" ToolTip="Charger une table chiffrée (Ctrl+O)">
+                    <icons:PackIconMaterial Kind="FolderOpenOutline" />
+                </ui:Button>
+                <ui:Button Command="{Binding SaveCommand}" Margin="0,0,16,0" ToolTip="Enregistrer la table, chiffrée (Ctrl+S)">
+                    <icons:PackIconMaterial Kind="ContentSaveOutline" />
+                </ui:Button>
+                <ui:Button Command="{Binding ImportCommand}" Margin="0,0,8,0"
+                           ToolTip="Importer : ajoute les entrées d'un fichier chiffré à la table">
+                    <icons:PackIconMaterial Kind="FileImportOutline" />
+                </ui:Button>
+                <ui:Button Command="{Binding ExportCommand}" ToolTip="Exporter une copie chiffrée de la table">
+                    <icons:PackIconMaterial Kind="FileExportOutline" />
+                </ui:Button>
+            </StackPanel>
+
+            <ui:TextBox DockPanel.Dock="Right" Width="260" PlaceholderText="Rechercher…" ClearButtonEnabled="True"
+                        Text="{Binding FilterText, UpdateSourceTrigger=PropertyChanged}"
+                        ToolTip="Filtre instantané sur les colonnes Original et Remplaçant">
+                <ui:TextBox.Icon>
+                    <ui:SymbolIcon Symbol="Search24" />
+                </ui:TextBox.Icon>
+            </ui:TextBox>
+        </DockPanel>
+
+        <Border Grid.Row="3" Style="{StaticResource ZoneCard}" Padding="4">
+            <DataGrid x:Name="EntriesGrid" PreviewKeyDown="OnGridPreviewKeyDown" ItemsSource="{Binding EntriesView}" SelectedItem="{Binding SelectedEntry}"
+                      AutoGenerateColumns="False" CanUserAddRows="False" CanUserDeleteRows="False"
+                      CanUserSortColumns="True" SelectionMode="Single" HeadersVisibility="Column"
+                      GridLinesVisibility="None" Background="Transparent" BorderThickness="0">
+                <DataGrid.Columns>
+                    <DataGridTextColumn Header="Original" Width="2*" SortMemberPath="Original"
+                                        Binding="{Binding Original, UpdateSourceTrigger=PropertyChanged}" />
+                    <DataGridTextColumn Header="Remplaçant" Width="2*" SortMemberPath="Replacement"
+                                        Binding="{Binding Replacement, UpdateSourceTrigger=PropertyChanged}" />
+                    <DataGridTemplateColumn Header="Type" Width="140" SortMemberPath="EntityType">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <ComboBox ItemsSource="{Binding DataContext.EntityTypes, RelativeSource={RelativeSource AncestorType=Page}}"
+                                          SelectedItem="{Binding EntityType, UpdateSourceTrigger=PropertyChanged}"
+                                          BorderBrush="{Binding EntityType, Converter={StaticResource EntityTypeToBrush}}"
+                                          BorderThickness="0,0,0,3" Margin="2" HorizontalAlignment="Stretch" />
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                    <DataGridTemplateColumn Header="Auto" Width="100" SortMemberPath="IsAutoGenerated">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <Border CornerRadius="10" Padding="10,2" HorizontalAlignment="Left" VerticalAlignment="Center"
+                                        ToolTip="{Binding StatusLabel}">
+                                    <Border.Style>
+                                        <Style TargetType="Border">
+                                            <Setter Property="Background" Value="{DynamicResource ControlFillColorSecondaryBrush}" />
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding IsAutoGenerated}" Value="True">
+                                                    <Setter Property="Background" Value="{DynamicResource SystemFillColorAttentionBrush}" />
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </Border.Style>
+                                    <TextBlock Text="{Binding StatusLabel}" FontSize="12" />
+                                </Border>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                    <DataGridTemplateColumn Header="Statut" Width="130" SortMemberPath="Replacement">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                    <icons:PackIconMaterial Width="14" Height="14" VerticalAlignment="Center" Margin="0,0,6,0">
+                                        <icons:PackIconMaterial.Style>
+                                            <Style TargetType="icons:PackIconMaterial">
+                                                <Setter Property="Kind" Value="CheckCircleOutline" />
+                                                <Setter Property="Foreground" Value="{DynamicResource SystemFillColorSuccessBrush}" />
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding Replacement}" Value="">
+                                                        <Setter Property="Kind" Value="AlertCircleOutline" />
+                                                        <Setter Property="Foreground" Value="{DynamicResource SystemFillColorCautionBrush}" />
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </icons:PackIconMaterial.Style>
+                                    </icons:PackIconMaterial>
+                                    <TextBlock VerticalAlignment="Center">
+                                        <TextBlock.Style>
+                                            <Style TargetType="TextBlock">
+                                                <Setter Property="Text" Value="Complet" />
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding Replacement}" Value="">
+                                                        <Setter Property="Text" Value="À compléter" />
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </TextBlock.Style>
+                                    </TextBlock>
+                                </StackPanel>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                </DataGrid.Columns>
+            </DataGrid>
+        </Border>
+    </Grid>
+</Page>

@@ -1,0 +1,241 @@
+<Page
+    x:Class="TextAnonymizer.Views.Pages.ViewerPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:avalon="http://icsharpcode.net/sharpdevelop/avalonedit"
+    xmlns:behaviors="clr-namespace:TextAnonymizer.Views.Behaviors"
+    xmlns:icons="http://metro.mahapps.com/winfx/xaml/iconpacks"
+    xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+    Title="Moteur de rendu"
+    Height="{Binding ViewportHeight, RelativeSource={RelativeSource AncestorType=ScrollViewer}}"
+    Background="Transparent">
+    <!--
+        Le NavigationView héberge les pages dans un ScrollViewer : sans cette hauteur, la page prend la taille de
+        son contenu et les zones ne défilent jamais.
+    -->
+    <Grid Margin="20,8,20,20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <TextBlock
+            Grid.Row="0"
+            Style="{StaticResource PageTitle}"
+            Text="Moteur de rendu" />
+
+        <DockPanel
+            Grid.Row="1"
+            Margin="0,0,0,12"
+            LastChildFill="False">
+            <StackPanel DockPanel.Dock="Left" Orientation="Horizontal">
+                <TextBlock
+                    Margin="0,0,8,0"
+                    VerticalAlignment="Center"
+                    Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                    Text="Format" />
+                <ComboBox
+                    MinWidth="140"
+                    AutomationProperties.Name="Format du texte"
+                    DisplayMemberPath="Label"
+                    ItemsSource="{Binding Formats}"
+                    SelectedItem="{Binding SelectedFormat, Mode=TwoWay}"
+                    ToolTip="Auto détecte le format ; les autres choix le forcent" />
+                <TextBlock
+                    Margin="12,0,0,0"
+                    VerticalAlignment="Center"
+                    Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                    Text="{Binding FormatLabel}" />
+            </StackPanel>
+            <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                <ui:Button
+                    Appearance="Transparent"
+                    AutomationProperties.Name="Coller"
+                    Command="{Binding PasteCommand}"
+                    ToolTip="Coller le texte du presse-papiers">
+                    <icons:PackIconMaterial Kind="ContentPaste" />
+                </ui:Button>
+                <ui:Button
+                    Appearance="Transparent"
+                    AutomationProperties.Name="Copier"
+                    Command="{Binding CopyCommand}"
+                    ToolTip="Copier le contenu (texte brut)">
+                    <icons:PackIconMaterial Kind="ContentCopy" />
+                </ui:Button>
+                <ui:Button
+                    Appearance="Transparent"
+                    AutomationProperties.Name="Effacer"
+                    Command="{Binding ClearCommand}"
+                    ToolTip="Effacer le contenu">
+                    <icons:PackIconMaterial Kind="EraserVariant" />
+                </ui:Button>
+                <ui:Button
+                    Appearance="Transparent"
+                    AutomationProperties.Name="Télécharger"
+                    Command="{Binding DownloadCommand}"
+                    ToolTip="Télécharger le contenu dans un fichier">
+                    <icons:PackIconMaterial Kind="Download" />
+                </ui:Button>
+            </StackPanel>
+        </DockPanel>
+
+        <Grid
+            x:Name="Panes"
+            Grid.Row="2"
+            SizeChanged="OnPanesSizeChanged">
+            <Border x:Name="EditorCard" Style="{StaticResource ZoneCard}">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+                    <StackPanel
+                        Grid.Row="0"
+                        Margin="0,0,0,8"
+                        Orientation="Horizontal">
+                        <icons:PackIconMaterial
+                            Margin="0,0,8,0"
+                            VerticalAlignment="Center"
+                            Kind="TextBoxOutline" />
+                        <TextBlock Style="{StaticResource ZoneHeader}" Text="Texte" />
+                    </StackPanel>
+                    <avalon:TextEditor
+                        x:Name="Editor"
+                        Grid.Row="1"
+                        behaviors:AvalonEditBehavior.Text="{Binding Text, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                        AutomationProperties.Name="Zone de saisie du texte à visualiser"
+                        HorizontalScrollBarVisibility="Auto"
+                        Style="{StaticResource TextZoneEditor}"
+                        VerticalScrollBarVisibility="Auto"
+                        WordWrap="False" />
+
+                    <TextBlock
+                        Grid.Row="1"
+                        HorizontalAlignment="Center"
+                        VerticalAlignment="Center"
+                        Foreground="{DynamicResource TextFillColorTertiaryBrush}"
+                        Text="Collez du texte (JSON, Markdown, HTML ou PHP) pour voir son rendu."
+                        TextWrapping="Wrap"
+                        Visibility="{Binding IsEmpty, Converter={StaticResource BoolToVisibility}}" />
+                </Grid>
+            </Border>
+
+            <Border x:Name="RenderCard" Style="{StaticResource ZoneCard}">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+                    <StackPanel
+                        Grid.Row="0"
+                        Margin="0,0,0,8"
+                        Orientation="Horizontal">
+                        <icons:PackIconMaterial
+                            Margin="0,0,8,0"
+                            VerticalAlignment="Center"
+                            Kind="EyeOutline" />
+                        <TextBlock Style="{StaticResource ZoneHeader}" Text="Rendu" />
+                    </StackPanel>
+
+                    <TabControl
+                        x:Name="Tabs"
+                        Grid.Row="1"
+                        SelectionChanged="OnTabSelectionChanged">
+                        <TabControl.Style>
+                            <Style BasedOn="{StaticResource {x:Type TabControl}}" TargetType="TabControl">
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IsEmpty}" Value="True">
+                                        <Setter Property="Visibility" Value="Collapsed" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TabControl.Style>
+
+                        <TabItem
+                            x:Name="JsonTab"
+                            Header="Arbre"
+                            Visibility="Collapsed">
+                            <Grid>
+                                <Border
+                                    x:Name="JsonErrorPanel"
+                                    Padding="12"
+                                    VerticalAlignment="Top"
+                                    Background="#33C62828"
+                                    BorderBrush="#C62828"
+                                    BorderThickness="1"
+                                    CornerRadius="6"
+                                    Visibility="Collapsed">
+                                    <TextBlock
+                                        x:Name="JsonErrorText"
+                                        Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+                                        TextWrapping="Wrap" />
+                                </Border>
+                                <TreeView
+                                    x:Name="JsonTree"
+                                    AutomationProperties.Name="Arborescence JSON"
+                                    Background="Transparent"
+                                    BorderThickness="0"
+                                    ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                                    ScrollViewer.VerticalScrollBarVisibility="Auto" />
+                            </Grid>
+                        </TabItem>
+
+                        <TabItem
+                            x:Name="FormattedTab"
+                            Header="Formaté"
+                            Visibility="Collapsed">
+                            <avalon:TextEditor
+                                x:Name="FormattedEditor"
+                                AutomationProperties.Name="JSON formaté"
+                                HorizontalScrollBarVisibility="Auto"
+                                IsReadOnly="True"
+                                Style="{StaticResource TextZoneEditor}"
+                                VerticalScrollBarVisibility="Auto"
+                                WordWrap="False" />
+                        </TabItem>
+
+                        <TabItem
+                            x:Name="MarkdownTab"
+                            Header="Rendu"
+                            Visibility="Collapsed">
+                            <FlowDocumentScrollViewer
+                                x:Name="MarkdownViewer"
+                                AutomationProperties.Name="Rendu Markdown"
+                                Background="Transparent"
+                                HorizontalScrollBarVisibility="Auto"
+                                Hyperlink.RequestNavigate="OnMarkdownLinkNavigate"
+                                IsToolBarVisible="False"
+                                VerticalScrollBarVisibility="Auto" />
+                        </TabItem>
+
+                        <TabItem
+                            x:Name="PreviewTab"
+                            Header="Aperçu"
+                            Visibility="Collapsed">
+                            <WebBrowser
+                                x:Name="HtmlBrowser"
+                                AutomationProperties.Name="Aperçu HTML (scripts désactivés)"
+                                LoadCompleted="OnHtmlLoadCompleted"
+                                Navigating="OnHtmlNavigating" />
+                        </TabItem>
+
+                        <TabItem
+                            x:Name="CodeTab"
+                            Header="Code"
+                            Visibility="Collapsed">
+                            <avalon:TextEditor
+                                x:Name="CodeEditor"
+                                AutomationProperties.Name="Code source"
+                                HorizontalScrollBarVisibility="Auto"
+                                IsReadOnly="True"
+                                Style="{StaticResource TextZoneEditor}"
+                                VerticalScrollBarVisibility="Auto"
+                                WordWrap="False" />
+                        </TabItem>
+                    </TabControl>
+                </Grid>
+            </Border>
+        </Grid>
+    </Grid>
+</Page>

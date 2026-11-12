@@ -1,0 +1,524 @@
+<Page
+    x:Class="TextAnonymizer.Views.Pages.ComparePage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:avalon="http://icsharpcode.net/sharpdevelop/avalonedit"
+    xmlns:behaviors="clr-namespace:TextAnonymizer.Views.Behaviors"
+    xmlns:icons="http://metro.mahapps.com/winfx/xaml/iconpacks"
+    xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+    Title="Comparateur de fichiers"
+    Height="{Binding ViewportHeight, RelativeSource={RelativeSource AncestorType=ScrollViewer}}"
+    Background="Transparent">
+    <!--  Même principe que le Moteur de rendu : la page est bornée à la zone visible pour que les éditeurs défilent.  -->
+    <Page.InputBindings>
+        <KeyBinding Command="{Binding CompareCommand}" Gesture="Ctrl+Enter" />
+        <KeyBinding Command="{Binding CompareCommand}" Gesture="F5" />
+        <KeyBinding Command="{Binding NextDifferenceCommand}" Gesture="F7" />
+        <KeyBinding Command="{Binding PreviousDifferenceCommand}" Gesture="Shift+F7" />
+        <KeyBinding Command="{Binding NextDifferenceCommand}" Gesture="Alt+Down" />
+        <KeyBinding Command="{Binding PreviousDifferenceCommand}" Gesture="Alt+Up" />
+    </Page.InputBindings>
+
+    <Page.Resources>
+        <Style x:Key="OptionBox" BasedOn="{StaticResource {x:Type CheckBox}}" TargetType="CheckBox">
+            <Setter Property="Margin" Value="0,0,16,4" />
+            <Setter Property="MinWidth" Value="0" />
+        </Style>
+        <Style x:Key="StatDot" TargetType="Ellipse">
+            <Setter Property="Width" Value="10" />
+            <Setter Property="Height" Value="10" />
+            <Setter Property="Margin" Value="0,0,6,0" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+        </Style>
+        <Style x:Key="StatText" TargetType="TextBlock">
+            <Setter Property="Margin" Value="0,0,18,0" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}" />
+        </Style>
+    </Page.Resources>
+
+    <Grid Margin="20,8,20,20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <TextBlock
+            Grid.Row="0"
+            Style="{StaticResource PageTitle}"
+            Text="Comparateur de fichiers" />
+
+        <!--  Barre d'outils : passe sur deux lignes quand la fenêtre est étroite  -->
+        <WrapPanel Grid.Row="1" Margin="0,0,0,8">
+            <StackPanel
+                Margin="0,0,24,4"
+                Orientation="Horizontal">
+                <ui:Button
+                    Margin="0,0,8,0"
+                    Appearance="Primary"
+                    AutomationProperties.Name="Comparer"
+                    Command="{Binding CompareCommand}"
+                    ToolTip="Comparer A et B (Ctrl+Entrée ou F5)">
+                    <StackPanel Orientation="Horizontal">
+                        <icons:PackIconMaterial
+                            Margin="0,0,8,0"
+                            VerticalAlignment="Center"
+                            Kind="CompareHorizontal" />
+                        <TextBlock Text="Comparer" />
+                    </StackPanel>
+                </ui:Button>
+                <ui:Button
+                    Margin="0,0,16,0"
+                    AutomationProperties.Name="Modifier"
+                    Command="{Binding EditCommand}"
+                    ToolTip="Revenir à la saisie de A et B"
+                    Visibility="{Binding IsEditing, Converter={StaticResource BoolToVisibility}, ConverterParameter=Invert}">
+                    <StackPanel Orientation="Horizontal">
+                        <icons:PackIconMaterial
+                            Margin="0,0,8,0"
+                            VerticalAlignment="Center"
+                            Kind="PencilOutline" />
+                        <TextBlock Text="Modifier" />
+                    </StackPanel>
+                </ui:Button>
+                <TextBlock
+                    Margin="0,0,8,0"
+                    VerticalAlignment="Center"
+                    Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                    Text="Mode" />
+                <ComboBox
+                    MinWidth="130"
+                    Margin="0,0,12,0"
+                    AutomationProperties.Name="Mode de comparaison"
+                    DisplayMemberPath="Label"
+                    ItemsSource="{Binding Formats}"
+                    SelectedItem="{Binding SelectedFormat, Mode=TwoWay}"
+                    ToolTip="Auto détecte le format ; les autres choix le forcent" />
+                <TextBlock
+                    Margin="0,0,8,0"
+                    VerticalAlignment="Center"
+                    Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                    Text="Affichage" />
+                <ComboBox
+                    MinWidth="130"
+                    AutomationProperties.Name="Mode d'affichage"
+                    DisplayMemberPath="Label"
+                    ItemsSource="{Binding DisplayModes}"
+                    SelectedItem="{Binding SelectedDisplayMode, Mode=TwoWay}"
+                    ToolTip="Côte à côte ou vue unifiée (+ / -)" />
+                <ui:ProgressRing
+                    Width="22"
+                    Height="22"
+                    Margin="12,0,0,0"
+                    VerticalAlignment="Center"
+                    IsIndeterminate="True"
+                    Visibility="{Binding IsBusy, Converter={StaticResource BoolToVisibility}}" />
+            </StackPanel>
+
+            <StackPanel Margin="0,0,0,4" Orientation="Horizontal">
+                <ui:Button
+                    Appearance="Transparent"
+                    AutomationProperties.Name="Différence précédente"
+                    Command="{Binding PreviousDifferenceCommand}"
+                    ToolTip="Différence précédente (Maj+F7)">
+                    <icons:PackIconMaterial Kind="ChevronUp" />
+                </ui:Button>
+                <TextBlock
+                    x:Name="NavigationText"
+                    MinWidth="110"
+                    Margin="4,0"
+                    VerticalAlignment="Center"
+                    AutomationProperties.LiveSetting="Polite"
+                    Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+                    Text="{Binding NavigationLabel}"
+                    TextAlignment="Center" />
+                <ui:Button
+                    Margin="0,0,12,0"
+                    Appearance="Transparent"
+                    AutomationProperties.Name="Différence suivante"
+                    Command="{Binding NextDifferenceCommand}"
+                    ToolTip="Différence suivante (F7)">
+                    <icons:PackIconMaterial Kind="ChevronDown" />
+                </ui:Button>
+                <ToggleButton
+                    Margin="0,0,4,0"
+                    AutomationProperties.Name="Synchroniser le défilement"
+                    IsChecked="{Binding IsScrollSynced, Mode=TwoWay}"
+                    ToolTip="Synchroniser le défilement de A et B">
+                    <icons:PackIconMaterial Kind="LinkVariant" />
+                </ToggleButton>
+                <ui:Button
+                    Appearance="Transparent"
+                    AutomationProperties.Name="Inverser A et B"
+                    Command="{Binding SwapCommand}"
+                    ToolTip="Inverser A et B">
+                    <icons:PackIconMaterial Kind="SwapHorizontal" />
+                </ui:Button>
+                <ui:Button
+                    Appearance="Transparent"
+                    AutomationProperties.Name="Effacer"
+                    Command="{Binding ClearCommand}"
+                    ToolTip="Vider A et B">
+                    <icons:PackIconMaterial Kind="EraserVariant" />
+                </ui:Button>
+                <ui:Button
+                    Appearance="Transparent"
+                    AutomationProperties.Name="Copier le résultat"
+                    Command="{Binding CopyResultCommand}"
+                    ToolTip="Copier le résultat (texte) dans le presse-papiers">
+                    <icons:PackIconMaterial Kind="ContentCopy" />
+                </ui:Button>
+                <ui:Button
+                    Appearance="Transparent"
+                    AutomationProperties.Name="Exporter en texte"
+                    Command="{Binding ExportTextCommand}"
+                    ToolTip="Exporter en texte (.txt)">
+                    <icons:PackIconMaterial Kind="FileDocumentOutline" />
+                </ui:Button>
+                <ui:Button
+                    Appearance="Transparent"
+                    AutomationProperties.Name="Exporter en HTML"
+                    Command="{Binding ExportHtmlCommand}"
+                    ToolTip="Exporter en HTML avec les couleurs (.html)">
+                    <icons:PackIconMaterial Kind="LanguageHtml5" />
+                </ui:Button>
+                <ui:Button
+                    Appearance="Transparent"
+                    AutomationProperties.Name="Exporter en patch"
+                    Command="{Binding ExportPatchCommand}"
+                    ToolTip="Exporter un patch au format unifié (.patch / .diff)">
+                    <icons:PackIconMaterial Kind="SourceBranch" />
+                </ui:Button>
+            </StackPanel>
+        </WrapPanel>
+
+        <!--  Options : toutes indépendantes  -->
+        <WrapPanel Grid.Row="2" Margin="0,0,0,8">
+            <CheckBox
+                Content="Ignorer la casse"
+                IsChecked="{Binding IgnoreCase}"
+                Style="{StaticResource OptionBox}" />
+            <CheckBox
+                Content="Ignorer les espaces en début et fin de ligne"
+                IsChecked="{Binding TrimWhitespace}"
+                Style="{StaticResource OptionBox}" />
+            <CheckBox
+                Content="Ignorer les espaces multiples"
+                IsChecked="{Binding CollapseWhitespace}"
+                Style="{StaticResource OptionBox}" />
+            <CheckBox
+                Content="Ignorer les tabulations"
+                IsChecked="{Binding IgnoreTabs}"
+                Style="{StaticResource OptionBox}"
+                ToolTip="Une tabulation vaut un espace" />
+            <CheckBox
+                Content="Ignorer les lignes vides"
+                IsChecked="{Binding IgnoreBlankLines}"
+                Style="{StaticResource OptionBox}" />
+            <CheckBox
+                Content="Ignorer les fins de ligne (CRLF / LF)"
+                IsChecked="{Binding IgnoreLineEndings}"
+                Style="{StaticResource OptionBox}" />
+            <CheckBox
+                Content="Insensible aux espaces"
+                IsChecked="{Binding IgnoreAllWhitespace}"
+                Style="{StaticResource OptionBox}"
+                ToolTip="Tous les blancs sont ignorés" />
+            <CheckBox
+                Content="Ignorer l'ordre des propriétés"
+                IsChecked="{Binding IgnorePropertyOrder}"
+                Style="{StaticResource OptionBox}"
+                ToolTip="JSON : un changement d'ordre des propriétés n'est pas une différence"
+                Visibility="{Binding SupportsPropertyOrder, Converter={StaticResource BoolToVisibility}}" />
+            <CheckBox
+                Content="Comparer la forme normalisée"
+                IsChecked="{Binding CompareNormalized}"
+                Style="{StaticResource OptionBox}"
+                ToolTip="JSON / XML : compare ligne à ligne une version réindentée, sans les différences de présentation"
+                Visibility="{Binding SupportsStructure, Converter={StaticResource BoolToVisibility}}" />
+        </WrapPanel>
+
+        <!--  Statistiques  -->
+        <Border
+            Grid.Row="3"
+            Margin="0,0,0,8"
+            Padding="12,8"
+            Style="{StaticResource ZoneCard}"
+            Visibility="{Binding ShowStatistics, Converter={StaticResource BoolToVisibility}}">
+            <WrapPanel>
+                <Ellipse Fill="#8C959F" Style="{StaticResource StatDot}" />
+                <TextBlock Style="{StaticResource StatText}" Text="{Binding Statistics.Identical, StringFormat='Identiques : {0}'}" />
+                <Ellipse Fill="#2DA44E" Style="{StaticResource StatDot}" />
+                <TextBlock Style="{StaticResource StatText}" Text="{Binding Statistics.Added, StringFormat='Ajoutées : {0}'}" />
+                <Ellipse Fill="#CF222E" Style="{StaticResource StatDot}" />
+                <TextBlock Style="{StaticResource StatText}" Text="{Binding Statistics.Deleted, StringFormat='Supprimées : {0}'}" />
+                <Ellipse Fill="#D4A72C" Style="{StaticResource StatDot}" />
+                <TextBlock Style="{StaticResource StatText}" Text="{Binding Statistics.Modified, StringFormat='Modifiées : {0}'}" />
+                <TextBlock Style="{StaticResource StatText}" Text="{Binding SimilarityLabel, StringFormat='Similarité : {0}'}" />
+                <TextBlock
+                    FontWeight="SemiBold"
+                    Style="{StaticResource StatText}"
+                    Text="{Binding Statistics.Differences, StringFormat='Différences : {0}'}" />
+                <TextBlock
+                    Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                    Style="{StaticResource StatText}"
+                    Text="{Binding FormatLabel}" />
+            </WrapPanel>
+        </Border>
+
+        <!--  Panneaux  -->
+        <Grid
+            x:Name="Panes"
+            Grid.Row="4"
+            SizeChanged="OnPanesSizeChanged">
+            <Border
+                x:Name="CardA"
+                AllowDrop="True"
+                PreviewDragOver="OnPaneDragOver"
+                PreviewDrop="OnPaneDrop"
+                Style="{StaticResource ZoneCard}"
+                Tag="A"
+                Visibility="{Binding ShowUnified, Converter={StaticResource BoolToVisibility}, ConverterParameter=Invert}">
+                <Grid DataContext="{Binding A}">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+                    <DockPanel Grid.Row="0" Margin="0,0,0,8">
+                        <StackPanel
+                            DockPanel.Dock="Right"
+                            Orientation="Horizontal"
+                            Visibility="{Binding DataContext.IsEditing, RelativeSource={RelativeSource AncestorType=Page}, Converter={StaticResource BoolToVisibility}}">
+                            <ui:Button
+                                Appearance="Transparent"
+                                AutomationProperties.Name="Ouvrir un fichier dans A"
+                                Command="{Binding DataContext.OpenFileCommand, RelativeSource={RelativeSource AncestorType=Page}}"
+                                CommandParameter="{Binding}"
+                                ToolTip="Ouvrir un fichier (lecture seule)">
+                                <icons:PackIconMaterial Kind="FolderOpenOutline" />
+                            </ui:Button>
+                            <ui:Button
+                                Appearance="Transparent"
+                                AutomationProperties.Name="Coller dans A"
+                                Command="{Binding DataContext.PasteCommand, RelativeSource={RelativeSource AncestorType=Page}}"
+                                CommandParameter="{Binding}"
+                                ToolTip="Coller le texte du presse-papiers">
+                                <icons:PackIconMaterial Kind="ContentPaste" />
+                            </ui:Button>
+                        </StackPanel>
+                        <icons:PackIconMaterial
+                            Margin="0,0,8,0"
+                            VerticalAlignment="Center"
+                            Kind="FileDocumentOutline" />
+                        <TextBlock Style="{StaticResource ZoneHeader}" Text="{Binding Title}" />
+                        <TextBlock
+                            Margin="12,0,0,0"
+                            VerticalAlignment="Center"
+                            Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                            Text="{Binding Description}"
+                            TextTrimming="CharacterEllipsis" />
+                    </DockPanel>
+
+                    <Grid Grid.Row="1" Visibility="{Binding DataContext.IsEditing, RelativeSource={RelativeSource AncestorType=Page}, Converter={StaticResource BoolToVisibility}}">
+                        <avalon:TextEditor
+                            x:Name="EditorA"
+                            behaviors:AvalonEditBehavior.Text="{Binding Text, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                            AutomationProperties.Name="Contenu A (original)"
+                            HorizontalScrollBarVisibility="Auto"
+                            Style="{StaticResource TextZoneEditor}"
+                            WordWrap="False" />
+                        <TextBlock
+                            HorizontalAlignment="Center"
+                            VerticalAlignment="Center"
+                            Foreground="{DynamicResource TextFillColorTertiaryBrush}"
+                            IsHitTestVisible="False"
+                            Text="Collez ou saisissez la version originale, ouvrez un fichier ou glissez-le ici."
+                            TextAlignment="Center"
+                            TextWrapping="Wrap"
+                            Visibility="{Binding IsEmpty, Converter={StaticResource BoolToVisibility}}" />
+                    </Grid>
+                    <avalon:TextEditor
+                        x:Name="DiffA"
+                        Grid.Row="1"
+                        AutomationProperties.Name="Différences, côté A"
+                        HorizontalScrollBarVisibility="Auto"
+                        Style="{StaticResource TextZoneEditor}"
+                        Visibility="{Binding DataContext.ShowSideBySide, RelativeSource={RelativeSource AncestorType=Page}, Converter={StaticResource BoolToVisibility}}" />
+                </Grid>
+            </Border>
+
+            <Border
+                x:Name="CardB"
+                AllowDrop="True"
+                PreviewDragOver="OnPaneDragOver"
+                PreviewDrop="OnPaneDrop"
+                Style="{StaticResource ZoneCard}"
+                Tag="B"
+                Visibility="{Binding ShowUnified, Converter={StaticResource BoolToVisibility}, ConverterParameter=Invert}">
+                <Grid DataContext="{Binding B}">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+                    <DockPanel Grid.Row="0" Margin="0,0,0,8">
+                        <StackPanel
+                            DockPanel.Dock="Right"
+                            Orientation="Horizontal"
+                            Visibility="{Binding DataContext.IsEditing, RelativeSource={RelativeSource AncestorType=Page}, Converter={StaticResource BoolToVisibility}}">
+                            <ui:Button
+                                Appearance="Transparent"
+                                AutomationProperties.Name="Ouvrir un fichier dans B"
+                                Command="{Binding DataContext.OpenFileCommand, RelativeSource={RelativeSource AncestorType=Page}}"
+                                CommandParameter="{Binding}"
+                                ToolTip="Ouvrir un fichier (lecture seule)">
+                                <icons:PackIconMaterial Kind="FolderOpenOutline" />
+                            </ui:Button>
+                            <ui:Button
+                                Appearance="Transparent"
+                                AutomationProperties.Name="Coller dans B"
+                                Command="{Binding DataContext.PasteCommand, RelativeSource={RelativeSource AncestorType=Page}}"
+                                CommandParameter="{Binding}"
+                                ToolTip="Coller le texte du presse-papiers">
+                                <icons:PackIconMaterial Kind="ContentPaste" />
+                            </ui:Button>
+                        </StackPanel>
+                        <icons:PackIconMaterial
+                            Margin="0,0,8,0"
+                            VerticalAlignment="Center"
+                            Kind="FileDocumentEditOutline" />
+                        <TextBlock Style="{StaticResource ZoneHeader}" Text="{Binding Title}" />
+                        <TextBlock
+                            Margin="12,0,0,0"
+                            VerticalAlignment="Center"
+                            Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                            Text="{Binding Description}"
+                            TextTrimming="CharacterEllipsis" />
+                    </DockPanel>
+
+                    <Grid Grid.Row="1" Visibility="{Binding DataContext.IsEditing, RelativeSource={RelativeSource AncestorType=Page}, Converter={StaticResource BoolToVisibility}}">
+                        <avalon:TextEditor
+                            x:Name="EditorB"
+                            behaviors:AvalonEditBehavior.Text="{Binding Text, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                            AutomationProperties.Name="Contenu B (nouvelle version)"
+                            HorizontalScrollBarVisibility="Auto"
+                            Style="{StaticResource TextZoneEditor}"
+                            WordWrap="False" />
+                        <TextBlock
+                            HorizontalAlignment="Center"
+                            VerticalAlignment="Center"
+                            Foreground="{DynamicResource TextFillColorTertiaryBrush}"
+                            IsHitTestVisible="False"
+                            Text="Collez ou saisissez la nouvelle version, ouvrez un fichier ou glissez-le ici."
+                            TextAlignment="Center"
+                            TextWrapping="Wrap"
+                            Visibility="{Binding IsEmpty, Converter={StaticResource BoolToVisibility}}" />
+                    </Grid>
+                    <avalon:TextEditor
+                        x:Name="DiffB"
+                        Grid.Row="1"
+                        AutomationProperties.Name="Différences, côté B"
+                        HorizontalScrollBarVisibility="Auto"
+                        Style="{StaticResource TextZoneEditor}"
+                        Visibility="{Binding DataContext.ShowSideBySide, RelativeSource={RelativeSource AncestorType=Page}, Converter={StaticResource BoolToVisibility}}" />
+                </Grid>
+            </Border>
+
+            <Border
+                x:Name="UnifiedCard"
+                Style="{StaticResource ZoneCard}"
+                Visibility="{Binding ShowUnified, Converter={StaticResource BoolToVisibility}}">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+                    <StackPanel
+                        Grid.Row="0"
+                        Margin="0,0,0,8"
+                        Orientation="Horizontal">
+                        <icons:PackIconMaterial
+                            Margin="0,0,8,0"
+                            VerticalAlignment="Center"
+                            Kind="FileCompare" />
+                        <TextBlock Style="{StaticResource ZoneHeader}" Text="Vue unifiée" />
+                        <TextBlock
+                            Margin="12,0,0,0"
+                            VerticalAlignment="Center"
+                            Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                            Text="« - » : ligne de A supprimée ou modifiée · « + » : ligne de B ajoutée ou modifiée" />
+                    </StackPanel>
+                    <avalon:TextEditor
+                        x:Name="DiffUnified"
+                        Grid.Row="1"
+                        AutomationProperties.Name="Différences, vue unifiée"
+                        HorizontalScrollBarVisibility="Auto"
+                        Style="{StaticResource TextZoneEditor}" />
+                </Grid>
+            </Border>
+        </Grid>
+
+        <!--  Changements structurels (JSON, XML, Markdown)  -->
+        <Border
+            Grid.Row="5"
+            Margin="0,8,0,0"
+            Padding="12,8"
+            Style="{StaticResource ZoneCard}"
+            Visibility="{Binding ShowStructural, Converter={StaticResource BoolToVisibility}}">
+            <Expander IsExpanded="False">
+                <Expander.Header>
+                    <StackPanel Orientation="Horizontal">
+                        <icons:PackIconMaterial
+                            Margin="0,0,8,0"
+                            VerticalAlignment="Center"
+                            Kind="FileTreeOutline" />
+                        <TextBlock Style="{StaticResource ZoneHeader}" Text="Changements structurels" />
+                        <TextBlock
+                            Margin="12,0,0,0"
+                            VerticalAlignment="Center"
+                            Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                            Text="{Binding Structural.Summary}"
+                            TextTrimming="CharacterEllipsis"
+                            TextWrapping="Wrap" />
+                    </StackPanel>
+                </Expander.Header>
+                <DataGrid
+                    x:Name="StructuralGrid"
+                    MaxHeight="220"
+                    AutoGenerateColumns="False"
+                    AutomationProperties.Name="Changements structurels"
+                    Background="Transparent"
+                    BorderThickness="0"
+                    CanUserAddRows="False"
+                    CanUserDeleteRows="False"
+                    GridLinesVisibility="None"
+                    HeadersVisibility="Column"
+                    IsReadOnly="True"
+                    ItemsSource="{Binding Structural.Changes}"
+                    SelectionMode="Single">
+                    <DataGrid.Columns>
+                        <DataGridTextColumn
+                            Width="110"
+                            Binding="{Binding KindLabel}"
+                            Header="Changement" />
+                        <DataGridTextColumn
+                            Width="2*"
+                            Binding="{Binding Path}"
+                            Header="Chemin" />
+                        <DataGridTextColumn
+                            Width="2*"
+                            Binding="{Binding OldValue}"
+                            Header="Avant (A)" />
+                        <DataGridTextColumn
+                            Width="2*"
+                            Binding="{Binding NewValue}"
+                            Header="Après (B)" />
+                    </DataGrid.Columns>
+                </DataGrid>
+            </Expander>
+        </Border>
+    </Grid>
+</Page>

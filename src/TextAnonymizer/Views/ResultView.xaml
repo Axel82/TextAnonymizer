@@ -1,0 +1,112 @@
+<UserControl
+    x:Class="TextAnonymizer.Views.ResultView"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:avalon="http://icsharpcode.net/sharpdevelop/avalonedit"
+    xmlns:behaviors="clr-namespace:TextAnonymizer.Views.Behaviors"
+    xmlns:icons="http://metro.mahapps.com/winfx/xaml/iconpacks"
+    xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml">
+    <Border Style="{StaticResource ZoneCard}">
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+
+            <DockPanel Grid.Row="0" Margin="0,0,0,8">
+                <StackPanel DockPanel.Dock="Left" Orientation="Horizontal">
+                    <icons:PackIconMaterial
+                        Margin="0,0,8,0"
+                        VerticalAlignment="Center"
+                        Kind="ShieldLockOutline" />
+                    <TextBlock Style="{StaticResource ZoneHeader}" Text="Résultat" />
+                </StackPanel>
+                <StackPanel HorizontalAlignment="Right" Orientation="Horizontal">
+                    <ui:Button
+                        Appearance="Transparent"
+                        Command="{Binding PasteResultCommand}"
+                        ToolTip="Coller un texte déjà anonymisé (pour le rétablir)">
+                        <icons:PackIconMaterial Kind="ContentPaste" />
+                    </ui:Button>
+                    <ui:Button
+                        Appearance="Transparent"
+                        Command="{Binding CopyResultCommand}"
+                        ToolTip="Copier le résultat (texte brut) — Ctrl+D">
+                        <icons:PackIconMaterial Kind="ContentCopy" />
+                    </ui:Button>
+                    <ui:Button
+                        Appearance="Transparent"
+                        Command="{Binding ClearResultCommand}"
+                        ToolTip="Vider le résultat">
+                        <icons:PackIconMaterial Kind="EraserVariant" />
+                    </ui:Button>
+                </StackPanel>
+            </DockPanel>
+
+            <Grid Grid.Row="1">
+                <avalon:TextEditor
+                    behaviors:AvalonEditBehavior.Result="{Binding Result}"
+                    HorizontalScrollBarVisibility="Auto"
+                    IsReadOnly="True"
+                    Style="{StaticResource TextZoneEditor}"
+                    VerticalScrollBarVisibility="Auto"
+                    WordWrap="False" />
+
+                <StackPanel
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Center"
+                    IsHitTestVisible="False"
+                    Visibility="{Binding ShowResultGuide, Converter={StaticResource BoolToVisibility}}">
+                    <icons:PackIconMaterial
+                        Width="40"
+                        Height="40"
+                        HorizontalAlignment="Center"
+                        Kind="TableLargePlus"
+                        Opacity="0.5" />
+                    <TextBlock
+                        Margin="0,12,0,4"
+                        HorizontalAlignment="Center"
+                        FontSize="16"
+                        Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                        Text="Chargez ou créez une table pour commencer" />
+                    <TextBlock
+                        HorizontalAlignment="Center"
+                        Foreground="{DynamicResource TextFillColorTertiaryBrush}"
+                        Text="Page « Table de conversion » : Ctrl+O pour charger, ou ajoutez vos entrées."
+                        TextAlignment="Center"
+                        TextWrapping="Wrap" />
+                </StackPanel>
+            </Grid>
+
+            <ItemsControl
+                Grid.Row="2"
+                Margin="0,10,0,0"
+                ItemsSource="{Binding Table.EntityTypes}"
+                ToolTip="Légende : couleur de surlignage par type d'entité">
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <WrapPanel />
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <StackPanel Margin="0,0,14,0" Orientation="Horizontal">
+                            <Border
+                                Width="14"
+                                Height="14"
+                                VerticalAlignment="Center"
+                                Background="{Binding Converter={StaticResource EntityTypeToBrush}}"
+                                CornerRadius="3" />
+                            <TextBlock
+                                Margin="6,0,0,0"
+                                VerticalAlignment="Center"
+                                Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                Text="{Binding}" />
+                        </StackPanel>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </Grid>
+    </Border>
+</UserControl>
